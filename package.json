@@ -1,6 +1,6 @@
 {
   "name": "zwip-bubble",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "main": "src/animation.js",
   "repository": "https://github.com/Gastonite/zwip-bubble",
   "author": "Clément Pasquier <clement@n00sphere.net>",
@@ -8,6 +8,7 @@
   "keywords": [
     "zwip",
     "animation",
+    "bubble",
     "requestAnimationFrame",
     "request-animation-frame",
     "js"
@@ -21,6 +22,6 @@
     "webpack": "^2.6.1",
     "webpack-dev-server": "^2.4.5",
     "zwip": "^1.1.2",
-    "zwip-player": "^1.0.3"
+    "zwip-player": "^1.0.4"
   }
 }

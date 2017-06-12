@@ -1,21 +1,23 @@
-# zwip-hole
+# zwip-fade
 
-An animation to be played with [Zwip](https://github.com/Gastonyte/zwip) 
+A [Zwip](https://github.com/Gastonyte/zwip) bubble animation 
+ 
+### Show example
 
-## Run the example
+show the already builded example:
 
-```
-cd example/simple
+```example/build/index.html```
 
-npm install && npm run dev
 
-```
-
-or, with yarn:
-```
-cd example/simple
-
-yarn && yarn dev
+### Build example using webpack-dev-server
 
 ```
-and [open the example](http://localhost:3000)
+npm i && npm run demo
+```
+
+or
+
+```
+yarn && yarn demo
+```
+Now the demo is visible at [http://localhost:3000](http://localhost:3000)

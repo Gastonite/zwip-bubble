@@ -20,12 +20,11 @@ const HoleAnimation = (options = {}) => {
 
   const { container, element } = _parseOptions(options);
 
+  const _style = {};
   let _center;
   let _rect;
-  let _style;
-  let _clone;
-  let _r1;
-  let _r2;
+  let _radius1;
+  let _radius2;
   let _difference;
 
   const _getCorners = offset => {
@@ -64,43 +63,11 @@ const HoleAnimation = (options = {}) => {
     }
   };
 
-  const start = () => {
-
-
-
-    // console.log('r1:', _r1)
-    // console.log('r2:', _r2)
-    // console.log('difference:', _difference)
-
-
-    // style.position = 'relative';
-    // style.margin = 'auto';
-
-    // container.insertBefore(_clone, element);
-
-    _clone = element.cloneNode();
-    console.log(element.offsetTop, element.offsetLeft);
-
-
-    element.parentNode.insertBefore(_clone, element);
-
-    _style = Object.assign(parseStyle(element), _defaultStyle);
-
-    render();
-
-
-  };
-
   const update = () => {
 
     const v = animation.value;
 
-    // console.log('_difference:', _difference, _rect);
     const size = _rect.width + (2 * _difference * v);
-
-    // console.log(`v=${v}, r2=${_style.width / 2}`)
-
-    // console.log('R:', _style.width);
 
     _style.left = `${(1 - (size / 2)) + _center.x - _rect.left}px`;
     _style.top = `${(1 - (size / 2)) + _center.y - _rect.top}px`;
@@ -110,41 +77,27 @@ const HoleAnimation = (options = {}) => {
 
   const render = () => {
 
-    _clone.setAttribute('style', renderStyle(_style));
+    element.setAttribute('style', renderStyle(_style));
 
   };
 
   _rect = element.getBoundingClientRect();
   _center = _getCenter(_rect);
 
-  _r1 = _rect.width / 2;
+  _radius1 = _rect.width / 2;
 
   const containerCorners = _getCorners(container.getBoundingClientRect());
   const distances = containerCorners.map(_calculateDistance.bind(null, _center));
 
-  _r2 = Math.max(...distances);
-
-  _difference = _r2 - _r1;
-
-
-  const stop = () => {
-
-    // _clone.setAttribute('style', '');
-
-    _clone && _clone.remove();
-  };
-
-
-
-
-
+  _radius2 = Math.max(...distances);
+  _difference = _radius2 - _radius1;
 
   const animation = Animation(Object.assign(options, {
     update,
-    render,
-    start,
-    stop
+    render
   }));
+
+  animation.on('start', () => Object.assign(_style, parseStyle(element), _defaultStyle));
 
   return animation;
 };
