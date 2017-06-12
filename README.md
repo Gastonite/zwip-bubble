@@ -1,4 +1,4 @@
-# zwip-fade
+# zwip-bubble
 
 A [Zwip](https://github.com/Gastonyte/zwip) bubble animation 
  
