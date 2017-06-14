@@ -1,14 +1,22 @@
 import Animation from 'zwip/src/animation';
 import { parse as parseStyle, stringify as renderStyle } from 'style-attr';
-import { isElement, isObject } from 'zwip/src/utils';
+import { isElement, isFunction, isObject, noop } from 'zwip/src/utils';
 
-
+const _defaultStyle = {
+  position: 'absolute',
+  // display: 'block'
+}
 const BubbleAnimation = (options = {}) => {
 
-  const { container, element } = isObject(options, 'options');
+  const {
+    container,
+    element,
+    start:_start = noop
+  } = isObject(options, 'options');
 
-  isElement(options.element, 'element');
-  isElement(options.container, 'container');
+  isElement(element, 'element');
+  isElement(container, 'container');
+  isFunction(_start, 'start');
 
   const _style = {};
   let _center;
@@ -59,6 +67,13 @@ const BubbleAnimation = (options = {}) => {
   _delta = _radius2 - _radius1;
 
   const animation = Animation(Object.assign(options, {
+    start() {
+      console.log('Bubble.start()');
+      Object.assign(_style, _defaultStyle, {
+        // top: _rect.top,
+        // left: _rect.left
+      });
+    },
     update(){
 
       const diameter = Math.round(_rect.width + (2 * _delta * animation.value) );
@@ -70,7 +85,7 @@ const BubbleAnimation = (options = {}) => {
     },
     render(){
 
-      element.setAttribute('style', renderStyle(_style));
+      element.setAttribute('style', Object.assign(renderStyle(_style), _defaultStyle));
     }
   }));
 
