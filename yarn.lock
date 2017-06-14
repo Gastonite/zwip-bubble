@@ -889,8 +889,8 @@ caniuse-api@^1.5.2:
     lodash.uniq "^4.5.0"
 
 caniuse-db@^1.0.30000529, caniuse-db@^1.0.30000634, caniuse-db@^1.0.30000639:
-  version "1.0.30000683"
-  resolved "https://registry.yarnpkg.com/caniuse-db/-/caniuse-db-1.0.30000683.tgz#58b57ed1e0bb9da54eaf1462985147bbe16679fa"
+  version "1.0.30000684"
+  resolved "https://registry.yarnpkg.com/caniuse-db/-/caniuse-db-1.0.30000684.tgz#99acb0118b8fd1fdd601a15e0c0f2dfc15a81680"
 
 caseless@~0.12.0:
   version "0.12.0"
@@ -935,8 +935,8 @@ cipher-base@^1.0.0, cipher-base@^1.0.1, cipher-base@^1.0.3:
     inherits "^2.0.1"
 
 clap@^1.0.9:
-  version "1.1.3"
-  resolved "https://registry.yarnpkg.com/clap/-/clap-1.1.3.tgz#b3bd36e93dd4cbfb395a3c26896352445265c05b"
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/clap/-/clap-1.2.0.tgz#59c90fe3e137104746ff19469a27a634ff68c857"
   dependencies:
     chalk "^1.1.3"
 
@@ -1667,11 +1667,11 @@ fs.realpath@^1.0.0:
   resolved "https://registry.yarnpkg.com/fs.realpath/-/fs.realpath-1.0.0.tgz#1504ad2523158caa40db4a2787cb01411994ea4f"
 
 fsevents@^1.0.0:
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/fsevents/-/fsevents-1.1.1.tgz#f19fd28f43eeaf761680e519a203c4d0b3d31aff"
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/fsevents/-/fsevents-1.1.2.tgz#3282b713fb3ad80ede0e9fcf4611b5aa6fc033f4"
   dependencies:
     nan "^2.3.0"
-    node-pre-gyp "^0.6.29"
+    node-pre-gyp "^0.6.36"
 
 fstream-ignore@^1.0.5:
   version "1.0.5"
@@ -2458,7 +2458,7 @@ node-libs-browser@^2.0.0:
     util "^0.10.3"
     vm-browserify "0.0.4"
 
-node-pre-gyp@^0.6.29:
+node-pre-gyp@^0.6.36:
   version "0.6.36"
   resolved "https://registry.yarnpkg.com/node-pre-gyp/-/node-pre-gyp-0.6.36.tgz#db604112cb74e0d477554e9b505b17abddfab786"
   dependencies:
@@ -2961,8 +2961,8 @@ postcss@^5.0.10, postcss@^5.0.11, postcss@^5.0.12, postcss@^5.0.13, postcss@^5.0
     supports-color "^3.2.3"
 
 postcss@^6.0.1:
-  version "6.0.1"
-  resolved "https://registry.yarnpkg.com/postcss/-/postcss-6.0.1.tgz#000dbd1f8eef217aa368b9a212c5fc40b2a8f3f2"
+  version "6.0.2"
+  resolved "https://registry.yarnpkg.com/postcss/-/postcss-6.0.2.tgz#5c4fea589f0ac3b00caa75b1cbc3a284195b7e5d"
   dependencies:
     chalk "^1.1.3"
     source-map "^0.5.6"
@@ -3528,8 +3528,8 @@ stream-browserify@^2.0.1:
     readable-stream "^2.0.2"
 
 stream-http@^2.3.1:
-  version "2.7.1"
-  resolved "https://registry.yarnpkg.com/stream-http/-/stream-http-2.7.1.tgz#546a51741ad5a6b07e9e31b0b10441a917df528a"
+  version "2.7.2"
+  resolved "https://registry.yarnpkg.com/stream-http/-/stream-http-2.7.2.tgz#40a050ec8dc3b53b33d9909415c02c0bf1abfbad"
   dependencies:
     builtin-status-codes "^3.0.0"
     inherits "^2.0.1"
@@ -3712,8 +3712,8 @@ uglify-js@3.0.x:
     source-map "~0.5.1"
 
 uglify-js@^2.8.27:
-  version "2.8.28"
-  resolved "https://registry.yarnpkg.com/uglify-js/-/uglify-js-2.8.28.tgz#e335032df9bb20dcb918f164589d5af47f38834a"
+  version "2.8.29"
+  resolved "https://registry.yarnpkg.com/uglify-js/-/uglify-js-2.8.29.tgz#29c5733148057bb4e1f75df35b7a9cb72e6a59dd"
   dependencies:
     source-map "~0.5.1"
     yargs "~3.10.0"
@@ -4005,9 +4005,19 @@ yargs@~3.10.0:
     decamelize "^1.0.0"
     window-size "0.1.0"
 
-zwip-player@^1.0.4:
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/zwip-player/-/zwip-player-1.0.4.tgz#b9b3e1b5d330bbdc0d415b82083bb07dcb437ccf"
+zwip-fade@^1.1.2:
+  version "1.1.3"
+  resolved "https://registry.yarnpkg.com/zwip-fade/-/zwip-fade-1.1.3.tgz#9f8eac7294d13288d0565c3c61fafe3b78c8cd50"
+  dependencies:
+    style-attr "^1.3.0"
+    webpack "^2.6.1"
+    webpack-dev-server "^2.4.5"
+    zwip "^1.1.2"
+    zwip-player "^1.0.7"
+
+zwip-player@^1.0.7:
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/zwip-player/-/zwip-player-1.0.7.tgz#d902bd6054d58aba507b5ae3ce492b52b4c082f4"
   dependencies:
     "@webcomponents/custom-elements" "^1.0.0"
     array.from "^1.0.3"
@@ -4030,6 +4040,8 @@ zwip-player@^1.0.4:
     webpack-dev-server "^2.4.5"
     zwip "^1.1.2"
 
-zwip@^1.1.2:
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/zwip/-/zwip-1.1.2.tgz#06177a37788f7424dcd1a62d69f8c2e22815fb44"
+zwip@^1.1.2, zwip@^1.1.3:
+  version "1.1.3"
+  resolved "https://registry.yarnpkg.com/zwip/-/zwip-1.1.3.tgz#e18bc7cbdf265bfe6629274ced81bb6b895f4eec"
+  dependencies:
+    zwip-fade "^1.1.2"

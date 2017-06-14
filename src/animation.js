@@ -1,31 +1,22 @@
 import Animation from 'zwip/src/animation';
 import { parse as parseStyle, stringify as renderStyle } from 'style-attr';
-
 import { isElement, isObject } from 'zwip/src/utils';
 
-const _defaultStyle = {
-  position: 'absolute'
-};
 
-const _parseOptions = (options) => {
+const BubbleAnimation = (options = {}) => {
 
-  isObject(options, 'options');
+  const { container, element } = isObject(options, 'options');
+
   isElement(options.element, 'element');
   isElement(options.container, 'container');
-
-  return options;
-};
-
-const HoleAnimation = (options = {}) => {
-
-  const { container, element } = _parseOptions(options);
 
   const _style = {};
   let _center;
   let _rect;
+
   let _radius1;
   let _radius2;
-  let _difference;
+  let _delta;
 
   const _getCorners = offset => {
 
@@ -34,19 +25,12 @@ const HoleAnimation = (options = {}) => {
     const bottomLeft = { x: offset.left, y: offset.bottom };
     const bottomRight = { x: offset.right, y: offset.bottom };
 
-    const positions = [
+    return [
       topLeft,
       topRight,
       bottomLeft,
       bottomRight,
     ];
-
-    return Object.assign(positions, {
-      topLeft,
-      topRight,
-      bottomLeft,
-      bottomRight,
-    })
   };
 
   const _calculateDistance = (from, to) => {
@@ -63,24 +47,6 @@ const HoleAnimation = (options = {}) => {
     }
   };
 
-  const update = () => {
-
-    const v = animation.value;
-
-    const size = _rect.width + (2 * _difference * v);
-
-    _style.left = `${(1 - (size / 2)) + _center.x - _rect.left}px`;
-    _style.top = `${(1 - (size / 2)) + _center.y - _rect.top}px`;
-
-    _style.width = _style.height = `${size}px`;
-  };
-
-  const render = () => {
-
-    element.setAttribute('style', renderStyle(_style));
-
-  };
-
   _rect = element.getBoundingClientRect();
   _center = _getCenter(_rect);
 
@@ -90,16 +56,25 @@ const HoleAnimation = (options = {}) => {
   const distances = containerCorners.map(_calculateDistance.bind(null, _center));
 
   _radius2 = Math.max(...distances);
-  _difference = _radius2 - _radius1;
+  _delta = _radius2 - _radius1;
 
   const animation = Animation(Object.assign(options, {
-    update,
-    render
-  }));
+    update(){
 
-  animation.on('start', () => Object.assign(_style, parseStyle(element), _defaultStyle));
+      const diameter = Math.round(_rect.width + (2 * _delta * animation.value) );
+      const radius = (diameter / 2);
+
+      _style.left = `${ _center.x - radius - container.offsetLeft }px`;
+      _style.top = `${ _center.y - radius - container.offsetTop }px`;
+      _style.width = _style.height = `${diameter}px`;
+    },
+    render(){
+
+      element.setAttribute('style', renderStyle(_style));
+    }
+  }));
 
   return animation;
 };
 
-export default HoleAnimation;
+export default BubbleAnimation;

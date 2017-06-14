@@ -59,7 +59,7 @@
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "b20aece4f3fcb975fb19"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "08de9c8925767d3a08e1"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentChildModule; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
@@ -8621,14 +8621,12 @@ internal.Player = function (element) {
       return _isLoopStarted = true;
     });
     _zwip.Loop.on('stop', function () {
-      return _isLoopStarted = false;
+      return _isLoopStarted = _isAnimationStarted = false;
     });
-    _zwip.Loop.on(['pause', 'stop'], _updateLoopState);
-
-    _zwip.Loop.register({
-      update: _updateLoopState,
-      frequency: 10
-    }, false);
+    _zwip.Loop.on(['pause', 'stop', 'tick'], _updateLoopState);
+    _zwip.Loop.on('tick', function () {
+      return _isLoopStarted = true;
+    });
 
     _updateLoopState();
   });
@@ -8637,9 +8635,8 @@ internal.Player = function (element) {
 
   var render = function render(element) {
     var state = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    var renderScene = state.renderScene;
 
-    var _Object$assign = Object.assign({}, internal.defaultState, state),
-        renderScene = _Object$assign.renderScene;
 
     (0, _incrementalDom.patch)(element, function () {
 
@@ -8654,6 +8651,7 @@ internal.Player = function (element) {
           internal.renderControl('◼', _stopAnimation, _isAnimationStarted);
         });
       });
+
       (0, _idomUtil.renderDiv)(null, null, 'class', 'right', function () {
         (0, _idomUtil.renderElement)('div', null, null, function () {
           (0, _idomUtil.renderH3)(_incrementalDom.text.bind(null, 'Loop state:'));
@@ -8686,15 +8684,13 @@ internal.Player.properties = {
 
     var title = scene.firstChild;
 
-    var start = function start() {
-      return title.style.position = 'absolute';
-    };
+    title.style.position = 'absolute';
 
     var render = function render() {
       return title.style.left = animation.value * (scene.clientWidth - title.clientWidth - 2) + 'px';
     };
 
-    var animation = (0, _zwip.Animation)({ duration: 10000, start: start, render: render });
+    var animation = (0, _zwip.Animation)({ duration: 5000, render: render });
 
     return animation;
   },
@@ -8754,58 +8750,53 @@ internal.parseEasing = function () {
   return easing;
 };
 
-internal.parseOptions = function (input) {
-  var options = {};
-
-  (0, _utils.isObject)(input, 'options');
-  (0, _utils.isUndefined)(input.isZwipAnimation, 'isZwipAnimation');
-
-  var start = input.start,
-      stop = input.stop,
-      update = input.update,
-      render = input.render,
-      reverse = input.reverse,
-      duration = input.duration,
-      nbFrames = input.nbFrames,
-      easing = input.easing;
-
-
-  options.start = !start ? _utils.noop : (0, _utils.isFunction)(start, 'start');
-  options.stop = !stop ? _utils.noop : (0, _utils.isFunction)(stop, 'stop');
-  options.update = !update ? _utils.noop : (0, _utils.isFunction)(update, 'update');
-  options.render = !render ? _utils.noop : (0, _utils.isFunction)(render, 'render');
-  options.reverse = !!reverse;
-
-  if (!(duration ^ nbFrames)) throw new Error('Exactly one option of [\'duration\', \'nbFrames\'] is required');
-
-  options.duration = duration && (0, _utils.isInteger)(duration, 'duration');
-  options.nbFrames = nbFrames && (0, _utils.isInteger)(nbFrames, 'nbFrames');
-
-  options.easing = internal.parseEasing(easing);
-
-  return options;
-};
-
 exports.default = internal.Animation = function () {
   var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-  var _options = options = internal.parseOptions(options),
-      _start = _options.start,
-      _stop = _options.stop,
-      _update = _options.update,
-      _easing = _options.easing,
-      _render = _options.render,
-      duration = _options.duration;
 
-  var _options2 = options,
-      nbFrames = _options2.nbFrames,
-      reverse = _options2.reverse;
+  (0, _utils.isObject)(options, 'options');
+  (0, _utils.isUndefined)(options.isZwipAnimation, 'isZwipAnimation');
 
+  var _options$start = options.start,
+      _start = _options$start === undefined ? _utils.noop : _options$start,
+      _options$stop = options.stop,
+      _stop = _options$stop === undefined ? _utils.noop : _options$stop,
+      _options$update = options.update,
+      _update = _options$update === undefined ? _utils.noop : _options$update,
+      _options$render = options.render,
+      _render = _options$render === undefined ? _utils.noop : _options$render,
+      duration = options.duration,
+      _options$frequency = options.frequency,
+      _frequency = _options$frequency === undefined ? 1 : _options$frequency;
+
+  var _reverse = options.reverse,
+      _easing = options.easing,
+      nbFrames = options.nbFrames;
+
+
+  (0, _utils.assert)((0, _utils.isFunction)(_start), '\'start\' must be a function');
+  (0, _utils.assert)((0, _utils.isFunction)(_stop), '\'stop\' must be a function');
+  (0, _utils.assert)((0, _utils.isFunction)(_update), '\'update\' must be a function');
+  (0, _utils.assert)((0, _utils.isFunction)(_render), '\'render\' must be a function');
+
+  (0, _utils.assert)((0, _utils.isInteger)(_frequency) && _frequency > 0, '\'frequency\' must be an integer greater than 0');
+
+  // console.log(duration, nbFrames, )
+  if (!(!(0, _utils.isUndefined)(duration) ^ !(0, _utils.isUndefined)(nbFrames))) throw new Error('Exactly one option of [\'duration\', \'nbFrames\'] is required');
+
+  if (duration) (0, _utils.assert)((0, _utils.isInteger)(duration) && duration > 0, '\'duration\' must be an integer greater than 0');
+
+  if (nbFrames) (0, _utils.assert)((0, _utils.isInteger)(nbFrames) && nbFrames > 0, '\'nbFrames\' must be an integer greater than 0');
+
+  _easing = internal.parseEasing(_easing);
+  _reverse = !!_reverse;
 
   var _startedAt = void 0;
   var _pausedAt = void 0;
   var _pausedTime = void 0;
   var _frameCounter = void 0;
+
+  console.log('frequency', _frequency);
 
   var animation = {
     isZwipAnimation: true,
@@ -8815,9 +8806,12 @@ exports.default = internal.Animation = function () {
 
       if (_startedAt) throw new Error('Animation is already started');
 
+      // console.log('Animation.start()', options)
+
       (0, _utils.isObject)(options, 'options');
 
-      if ('reverse' in options) reverse = !!options.reverse;
+      // const reverse = 'reverse' in options ? !!options.reverse : _reverse;
+      if ('reverse' in options) _reverse = !!options.reverse;
 
       _pausedAt = null;
       _startedAt = Date.now();
@@ -8878,6 +8872,12 @@ exports.default = internal.Animation = function () {
     get currentFrame() {
       return _frameCounter;
     },
+    get reverse() {
+      return _reverse;
+    },
+    get frequency() {
+      return _frequency;
+    },
     get pausedAt() {
       return _pausedAt;
     },
@@ -8897,7 +8897,7 @@ exports.default = internal.Animation = function () {
 
       var value = _frameCounter / nbFrames;
 
-      return _easing(!reverse ? value : 1 - value);
+      return _easing(!_reverse ? value : 1 - value);
     },
     get nbFrames() {
 
@@ -8936,6 +8936,181 @@ exports.default = internal.Animation = function () {
 internal.Animation.isAnimation = function (input) {
   return (0, _utils.isObject)(input) && input.isZwipAnimation === true;
 };
+
+/***/ }),
+
+/***/ "../node_modules/zwip/src/chain.js":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _animation = __webpack_require__("../node_modules/zwip/src/animation.js");
+
+var _animation2 = _interopRequireDefault(_animation);
+
+var _utils = __webpack_require__("../node_modules/zwip/src/utils.js");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var Chain = function Chain() {
+  var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+  var _options = options = (0, _utils.isObject)(options, 'options'),
+      duration = _options.duration,
+      frequency = _options.frequency,
+      animations = _options.animations,
+      _options$start = _options.start,
+      _start = _options$start === undefined ? _utils.noop : _options$start,
+      _options$stop = _options.stop,
+      _stop = _options$stop === undefined ? _utils.noop : _options$stop;
+
+  var _options2 = options,
+      _options2$reverse = _options2.reverse,
+      reverse = _options2$reverse === undefined ? false : _options2$reverse;
+
+
+  (0, _utils.isInteger)(duration, 'duration');
+  (0, _utils.isArray)(animations, 'animations');
+
+  var durationsSum = animations.reduce(function (sum, animation, i) {
+
+    if (!_animation2.default.isAnimation(animation)) throw new Error('Invalid Chain: Invalid "animations" option: item at position ' + i + ' is not a Zwip animation');
+
+    return sum + animation.duration;
+  }, 0);
+
+  if (duration !== durationsSum) throw new Error('Invalid Chain: \'duration\' must be equal to the sum of \'animations\' durations');
+
+  var _started = false;
+  var _reverse = false;
+
+  var chain = {
+    duration: duration,
+    animations: animations,
+    start: function start() {
+      var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+
+      if (_started) throw new Error('Chain is already started');
+
+      _started = true;
+
+      var _isObject = (0, _utils.isObject)(options, 'options'),
+          reverse = _isObject.reverse;
+
+      reverse = !!reverse;
+
+      error('Chain.start() actual:', _reverse, 'option:', reverse, '1:', animations[0].reverse, '2:', animations[1].reverse);
+
+      _start();
+
+      var items = animations;
+
+      var reverseHasChanged = reverse !== _reverse;
+      if (reverseHasChanged) {
+        _reverse = !_reverse;
+      }
+      if (reverse) {
+        items = animations.slice(0).reverse();
+      }
+
+      var _startAnimation = function _startAnimation(animation) {
+
+        var options = {};
+
+        // if (reverse && reverseHasChanged)
+        // if (reverseHasChanged )
+        if (reverseHasChanged) options.reverse = !animation.reverse;
+        // options.reverse = reverse;
+
+        animation.start(options);
+      };
+
+      items.forEach(function (item, i) {
+
+        var isFirst = i === 0;
+        if (isFirst) _startAnimation(item);
+
+        var _nextAnimation = function _nextAnimation() {
+
+          item.off('stop', _nextAnimation);
+
+          if (i >= items.length - 1) return chain.stop();
+
+          _startAnimation(items[i + 1]);
+        };
+
+        item.on('stop', _nextAnimation);
+      });
+    },
+    stop: function stop() {
+
+      _stop();
+      _started = false;
+    }
+  };
+
+  return Object.freeze(chain);
+};
+// const Chain = (options = {}) => {
+//
+//   const { animations, duration } = _parseOptions(options);
+//
+//   const durationsSum = animations.reduce((sum, animation, i) => {
+//
+//     if (!animation || animation.isZwipAnimation !== true)
+//       throw new Error(`Invalid Chain: Invalid "animations" option: item at position ${i} is not a Zwip animation`);
+//
+//     return sum + animation.duration;
+//   }, 0);
+//
+//   if (duration !== durationsSum)
+//     throw new Error(`Invalid Chain: The total duration is not equal to the sum of the duration of the "animations"`);
+//
+//
+//   return Animation({
+//     duration,
+//     start(options) {
+//
+//       console.log('Chain.start()', options.reverse);
+//
+//       let _items = animations;
+//
+//       if (options.reverse)
+//         _items = _items.reverse();
+//
+//       _items.forEach((animation, i) => {
+//
+//         console.error('chain_'+i, animation.id, animation, options.reverse);
+//
+//         const _startNextAnimation = () => {
+//
+//           // console.error('chain_'+i, 'stop');
+//
+//           if (i < _items.length - 1) {
+//
+//             // console.error('chain_'+i, 'next', _items[i + 1].id, options.reverse);
+//
+//             _items[i + 1].start({ reverse: options.reverse });
+//
+//             animation.off('stop', _startNextAnimation);
+//           }
+//         };
+//
+//         animation.on('stop', _startNextAnimation);
+//       });
+//
+//       animations[0].start();
+//     }
+//   });
+// };
+
+exports.default = Chain;
 
 /***/ }),
 
@@ -8997,7 +9172,7 @@ var easings = exports.easings = {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Loop = exports.Animation = undefined;
+exports.Chain = exports.Loop = exports.Animation = undefined;
 
 var _animation = __webpack_require__("../node_modules/zwip/src/animation.js");
 
@@ -9007,10 +9182,15 @@ var _loop = __webpack_require__("../node_modules/zwip/src/loop.js");
 
 var _loop2 = _interopRequireDefault(_loop);
 
+var _chain = __webpack_require__("../node_modules/zwip/src/chain.js");
+
+var _chain2 = _interopRequireDefault(_chain);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 exports.Animation = _animation2.default;
 exports.Loop = _loop2.default;
+exports.Chain = _chain2.default;
 
 /***/ }),
 
@@ -9032,7 +9212,7 @@ var _utils = __webpack_require__("../node_modules/zwip/src/utils.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var internals = {
+var internal = {
   animations: [],
   listeners: [],
   state: {
@@ -9042,23 +9222,23 @@ var internals = {
   listenerTypes: ['start', 'stop', 'pause', 'unpause']
 };
 
-internals.loop = function () {
+internal.loop = function () {
 
-  if (internals.paused) return;
+  if (internal.paused) return;
 
-  internals.requestId = requestAnimationFrame(internals.loop);
-  internals.now = Date.now();
+  internal.requestId = requestAnimationFrame(internal.loop);
+  internal.now = Date.now();
 
-  internals.interval = 1000 / internals.fps;
-  internals.delta = internals.now - internals.then;
+  internal.interval = 1000 / internal.fps;
+  internal.delta = internal.now - internal.then;
 
-  if (internals.delta > internals.interval) {
+  if (internal.delta > internal.interval) {
 
-    internals.AnimationLoop.frame();
+    internal.AnimationLoop.frame();
   }
 };
 
-internals.MethodCaller = function (key) {
+internal.MethodCaller = function (key) {
   for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
     args[_key - 1] = arguments[_key];
   }
@@ -9068,63 +9248,64 @@ internals.MethodCaller = function (key) {
 
   return function (animation) {
 
-    if (animation[key] && internals.counter % animation.frequency === 0) animation[key].apply(animation, args);
+    // console.log(internal.counter, animation, animation.frequency, internal.counter % animation.frequency)
+    if (animation[key] && internal.counter % animation.frequency === 0) animation[key].apply(animation, args);
   };
 };
 
-internals.emitTick = internals.MethodCaller('emit', 'tick');
-internals.callUpdate = internals.MethodCaller('update');
-internals.callRender = internals.MethodCaller('render');
-internals.callPause = internals.MethodCaller('pause');
+internal.emitTick = internal.MethodCaller('emit', 'tick');
+internal.callUpdate = internal.MethodCaller('update');
+internal.callRender = internal.MethodCaller('render');
+internal.callPause = internal.MethodCaller('pause');
 
-internals.isNotPaused = function (object) {
+internal.isNotPaused = function (object) {
   return !object.pausedAt;
 };
 
-internals.AnimationLoop = {
+internal.AnimationLoop = {
   start: function start() {
 
-    if (internals.requestId) throw new Error('Loop is already started');
+    if (internal.requestId) throw new Error('Loop is already started');
 
-    internals.counter = 0;
-    internals.paused = null;
-    internals.then = Date.now();
-    internals.state.status = 'started';
+    internal.counter = 0;
+    internal.paused = null;
+    internal.then = Date.now();
+    internal.state.status = 'started';
 
-    internals.loop();
+    internal.loop();
 
-    internals.AnimationLoop.emit('start');
+    internal.AnimationLoop.emit('start');
   },
   stop: function stop() {
 
-    if (internals.requestId) cancelAnimationFrame(internals.requestId);
+    if (internal.requestId) cancelAnimationFrame(internal.requestId);
 
-    internals.requestId = null;
-    internals.state.status = 'stopped';
+    internal.requestId = null;
+    internal.state.status = 'stopped';
 
-    internals.AnimationLoop.emit('stop');
+    internal.AnimationLoop.emit('stop');
   },
   pause: function pause() {
 
-    if (internals.paused) {
+    if (internal.paused) {
 
-      internals.paused = null;
-      internals.state.status = 'started';
+      internal.paused = null;
+      internal.state.status = 'started';
 
-      internals.animations.forEach(internals.callPause);
+      internal.animations.forEach(internal.callPause);
 
-      internals.AnimationLoop.emit('unpause');
+      internal.AnimationLoop.emit('unpause');
 
-      internals.loop();
+      internal.loop();
       return;
     }
 
-    internals.animations.forEach(internals.callPause);
+    internal.animations.forEach(internal.callPause);
 
-    internals.paused = Date.now();
-    internals.state.status = 'paused';
+    internal.paused = Date.now();
+    internal.state.status = 'paused';
 
-    internals.AnimationLoop.emit('pause');
+    internal.AnimationLoop.emit('pause');
   },
   register: function register(animation) {
     var auto = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
@@ -9132,67 +9313,67 @@ internals.AnimationLoop = {
 
     (0, _utils.isObject)(animation, 'animation');
 
-    animation.frequency = animation.frequency || 1;
+    (0, _utils.assert)(animation.isZwipAnimation === true, '\'animation\' must be a ZwipAnimation object');
 
-    (0, _utils.isInteger)(animation.frequency, 'frequency');
-
-    (0, _utils.assert)((0, _utils.isFunction)(animation.render) || (0, _utils.isFunction)(animation.update), '\'render\' or \'update\' method is required');
+    (0, _utils.assert)((0, _utils.isFunction)(animation.render) || (0, _utils.isFunction)(animation.update), 'At least \'render\' or \'update\' method is required');
 
     animation.render = animation.render || _utils.noop;
     animation.update = animation.update || _utils.noop;
 
-    if (auto && !internals.requestId) internals.AnimationLoop.start();
+    if (auto && !internal.requestId) internal.AnimationLoop.start();
 
-    if (internals.animations.includes(animation)) return;
+    if (internal.animations.includes(animation)) return;
 
-    internals.animations.push(animation);
+    internal.animations.push(animation);
   },
   deregister: function deregister(animation) {
     var auto = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
 
 
-    var index = internals.animations.indexOf(animation);
+    var index = internal.animations.indexOf(animation);
 
-    if (~index) internals.animations.splice(index, 1);
+    if (~index) internal.animations.splice(index, 1);
 
-    if (auto && internals.requestId && !internals.animations.length) internals.AnimationLoop.stop();
+    if (auto && internal.requestId && !internal.animations.length) internal.AnimationLoop.stop();
   },
   frame: function frame() {
 
-    internals.counter++;
+    internal.AnimationLoop.emit('tick');
 
-    internals.elapsed = internals.now - internals.then;
-    internals.then = internals.now - internals.delta % internals.interval;
+    internal.counter++;
 
-    internals.state.fps = 1000 / internals.elapsed;
-    internals.state.animations = internals.animations.length;
-    internals.state.frames = internals.counter;
+    internal.elapsed = internal.now - internal.then;
+    internal.then = internal.now - internal.delta % internal.interval;
 
-    var animations = internals.animations.filter(internals.isNotPaused);
+    internal.state.fps = 1000 / internal.elapsed;
+    internal.state.animations = internal.animations.length;
+    internal.state.frames = internal.counter;
 
-    animations.forEach(internals.emitTick);
+    var animations = internal.animations.filter(internal.isNotPaused);
 
-    animations.forEach(internals.callUpdate);
+    animations.forEach(internal.emitTick);
 
-    animations.forEach(internals.callRender);
+    animations.forEach(internal.callUpdate);
+
+    animations.forEach(internal.callRender);
   },
 
 
   get state() {
-    return internals.state;
+    return internal.state;
   },
   get fps() {
-    return internals.fps;
+    return internal.fps;
   },
   set fps(newValue) {
 
     (0, _utils.isInteger)(newValue, 'fps');
 
-    internals.fps = newValue;
+    internal.fps = newValue;
   }
 };
 
-exports.default = Object.assign(internals.AnimationLoop, (0, _klak2.default)(['start', 'stop', 'pause', 'unpause']));
+exports.default = Object.assign(internal.AnimationLoop, (0, _klak2.default)(['start', 'stop', 'pause', 'unpause', 'tick']));
 
 /***/ }),
 
@@ -9324,30 +9505,20 @@ var round = exports.round = function round(value, decimals) {
 
 
 
+const BubbleAnimation = (options = {}) => {
 
-const _defaultStyle = {
-  position: 'absolute'
-};
+  const { container, element } = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_zwip_src_utils__["isObject"])(options, 'options');
 
-const _parseOptions = options => {
-
-  __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_zwip_src_utils__["isObject"])(options, 'options');
   __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_zwip_src_utils__["isElement"])(options.element, 'element');
   __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_zwip_src_utils__["isElement"])(options.container, 'container');
-
-  return options;
-};
-
-const HoleAnimation = (options = {}) => {
-
-  const { container, element } = _parseOptions(options);
 
   const _style = {};
   let _center;
   let _rect;
+
   let _radius1;
   let _radius2;
-  let _difference;
+  let _delta;
 
   const _getCorners = offset => {
 
@@ -9356,14 +9527,7 @@ const HoleAnimation = (options = {}) => {
     const bottomLeft = { x: offset.left, y: offset.bottom };
     const bottomRight = { x: offset.right, y: offset.bottom };
 
-    const positions = [topLeft, topRight, bottomLeft, bottomRight];
-
-    return Object.assign(positions, {
-      topLeft,
-      topRight,
-      bottomLeft,
-      bottomRight
-    });
+    return [topLeft, topRight, bottomLeft, bottomRight];
   };
 
   const _calculateDistance = (from, to) => {
@@ -9378,23 +9542,6 @@ const HoleAnimation = (options = {}) => {
     };
   };
 
-  const update = () => {
-
-    const v = animation.value;
-
-    const size = _rect.width + 2 * _difference * v;
-
-    _style.left = `${1 - size / 2 + _center.x - _rect.left}px`;
-    _style.top = `${1 - size / 2 + _center.y - _rect.top}px`;
-
-    _style.width = _style.height = `${size}px`;
-  };
-
-  const render = () => {
-
-    element.setAttribute('style', __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_1_style_attr__["stringify"])(_style));
-  };
-
   _rect = element.getBoundingClientRect();
   _center = _getCenter(_rect);
 
@@ -9404,19 +9551,28 @@ const HoleAnimation = (options = {}) => {
   const distances = containerCorners.map(_calculateDistance.bind(null, _center));
 
   _radius2 = Math.max(...distances);
-  _difference = _radius2 - _radius1;
+  _delta = _radius2 - _radius1;
 
   const animation = __WEBPACK_IMPORTED_MODULE_0_zwip_src_animation___default()(Object.assign(options, {
-    update,
-    render
-  }));
+    update() {
 
-  animation.on('start', () => Object.assign(_style, __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_1_style_attr__["parse"])(element), _defaultStyle));
+      const diameter = Math.round(_rect.width + 2 * _delta * animation.value);
+      const radius = diameter / 2;
+
+      _style.left = `${_center.x - radius - container.offsetLeft}px`;
+      _style.top = `${_center.y - radius - container.offsetTop}px`;
+      _style.width = _style.height = `${diameter}px`;
+    },
+    render() {
+
+      element.setAttribute('style', __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_1_style_attr__["stringify"])(_style));
+    }
+  }));
 
   return animation;
 };
 
-/* harmony default export */ __webpack_exports__["a"] = (HoleAnimation);
+/* harmony default export */ __webpack_exports__["a"] = (BubbleAnimation);
 
 /***/ }),
 
@@ -9453,14 +9609,17 @@ document.addEventListener('DOMContentLoaded', () => {
     makeAnimation(scene) {
 
       return __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_5__src_animation__["a" /* default */])({
-        container: scene,
-        element: scene.firstChild,
+        container: scene.firstChild,
+        element: scene.querySelector('.circle'),
         duration: 4000
       });
     },
     renderScene() {
 
-      __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_4_idom_util__["renderDiv"])(null, null, 'class', 'circle', null);
+      __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_4_idom_util__["renderDiv"])(null, null, 'style', 'overflow:hidden;border: 1px solid black;width:100%; height:90%; position:relative; top: 10%', () => {
+
+        __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_4_idom_util__["renderDiv"])(null, null, 'class', 'circle' /*, 'position', ''*/, null);
+      });
     }
   });
 

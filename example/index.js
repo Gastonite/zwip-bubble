@@ -15,14 +15,18 @@ document.addEventListener('DOMContentLoaded', () => {
     makeAnimation(scene) {
 
       return BubbleAnimation({
-        container: scene,
-        element: scene.firstChild,
+        container: scene.firstChild,
+        element: scene.querySelector('.circle'),
         duration: 4000
       });
     },
     renderScene() {
 
-      renderDiv(null, null, 'class', 'circle', null);
+      renderDiv(null, null, 'style', 'overflow:hidden;border: 1px solid black;width:100%; height:90%; position:relative; top: 10%', () => {
+
+        renderDiv(null, null, 'class', 'circle'/*, 'position', ''*/, null);
+
+      });
     },
   });
 
