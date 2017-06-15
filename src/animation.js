@@ -68,7 +68,6 @@ const BubbleAnimation = (options = {}) => {
 
   const animation = Animation(Object.assign(options, {
     start() {
-      console.log('Bubble.start()');
       Object.assign(_style, _defaultStyle, {
         // top: _rect.top,
         // left: _rect.left
