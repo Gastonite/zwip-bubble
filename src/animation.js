@@ -84,6 +84,8 @@ const BubbleAnimation = (options = {}) => {
   const animation = Animation(Object.assign(options, {
     start(options) {
 
+      console.log('Bubble.start()');
+
       container.appendChild(_clone);
 
       Object.assign(_style, _defaultStyle);
@@ -92,11 +94,13 @@ const BubbleAnimation = (options = {}) => {
 
     },
     stop(options) {
+      console.log('Bubble.stop()');
 
       _stop();
       container.removeChild(_clone);
     },
     update(){
+      console.log('Bubble.update()');
 
       const diameter = Math.round(_rect.width + (2 * _delta * animation.value) );
       const radius = (diameter / 2);
@@ -106,6 +110,7 @@ const BubbleAnimation = (options = {}) => {
       _style.width = _style.height = `${diameter}px`;
     },
     render(){
+      console.log('Bubble.render()');
 
       _clone.setAttribute('style', Object.assign(renderStyle(_style), _defaultStyle));
     }
