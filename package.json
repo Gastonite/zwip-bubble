@@ -1,6 +1,6 @@
 {
   "name": "zwip-bubble",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "main": "src/animation.js",
   "repository": "https://github.com/gastonite/zwip-bubble",
   "author": "Clément Pasquier <clement@n00sphere.net>",
