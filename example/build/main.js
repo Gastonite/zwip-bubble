@@ -59,7 +59,7 @@
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "08de9c8925767d3a08e1"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "a5cdcdaf9fc5ce9ec632"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentChildModule; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
@@ -710,6 +710,944 @@
 /******/ })
 /************************************************************************/
 /******/ ({
+
+/***/ "../../klak/src/emitter.js":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var internals = {};
+
+internals.TypeFilter = function (type) {
+  return function (value) {
+    return value.type === type;
+  };
+};
+internals.EqualityFilter = function (value) {
+  return function (input) {
+    return input === value;
+  };
+};
+
+internals.getListener = function (value) {
+  return value.listener;
+};
+internals.isString = function (input) {
+  return typeof input === 'string';
+};
+internals.isArray = function (input) {
+  return input instanceof Array;
+};
+internals.isFunction = function (input) {
+  return typeof input === 'function';
+};
+internals.isEmpty = function (input) {
+  return input.length < 1;
+};
+internals.assert = function (condition, message) {
+  if (!condition) throw new Error(message);
+};
+internals.ArgumentCheck = function (types, method) {
+  var assert = internals.assert,
+      isArray = internals.isArray,
+      isString = internals.isString,
+      isFunction = internals.isFunction,
+      isEmpty = internals.isEmpty;
+
+
+  assert(isFunction(method), '\'method\' must be a function');
+
+  var check = function check(type, listener) {
+
+    if (isArray(type)) return type.forEach(function (type) {
+      return check(type, listener);
+    });
+
+    assert(isString(type) && !isEmpty(type), '\'type\' must be a string');
+
+    assert(types.includes(type), '"' + type + '" listener type is not allowed');
+
+    if (isArray(listener)) return listener.forEach(function (handler) {
+      return check(type, handler);
+    });
+
+    assert(isFunction(listener), '\'listener\' must be a function');
+
+    method(type, listener);
+  };
+
+  return check;
+};
+
+internals.Emitter = module.exports = function (allowedTypes) {
+  var assert = internals.assert,
+      TypeFilter = internals.TypeFilter,
+      EqualityFilter = internals.EqualityFilter,
+      getListener = internals.getListener,
+      isArray = internals.isArray,
+      isString = internals.isString,
+      isEmpty = internals.isEmpty;
+
+
+  assert(isArray(allowedTypes) && !isEmpty(allowedTypes) && allowedTypes.every(isString), '\'types\' must be an array of string');
+
+  var _listeners = [];
+
+  var _getListeners = function _getListeners(type) {
+    return _listeners.filter(TypeFilter(type)).map(getListener);
+  };
+  var _findListener = function _findListener(type, listener) {
+    return _getListeners(type).find(EqualityFilter(listener));
+  };
+
+  var emitter = {
+    on: function on(type, listener) {
+
+      if (_findListener(type, listener)) return;
+
+      _listeners.push({ type: type, listener: listener });
+    },
+    off: function off(type, listener) {
+
+      var found = _findListener(type, listener);
+
+      if (!found) return;
+
+      _listeners.splice(_listeners.findIndex(function (item) {
+        return item.type === type && item.listener === found;
+      }), 1);
+    },
+    emit: function emit(type) {
+      for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+        args[_key - 1] = arguments[_key];
+      }
+
+      assert(isString(type) && !isEmpty(type), '\'type\' must be a string');
+
+      _getListeners(type).forEach(function (handler) {
+        return void handler.apply(undefined, args);
+      });
+    }
+  };
+
+  emitter.on = internals.ArgumentCheck(allowedTypes, emitter.on);
+  emitter.off = internals.ArgumentCheck(allowedTypes, emitter.off);
+
+  return emitter;
+};
+
+/***/ }),
+
+/***/ "../../noos/apps/mayan/node_modules/process/browser.js":
+/***/ (function(module, exports) {
+
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+function defaultSetTimout() {
+    throw new Error('setTimeout has not been defined');
+}
+function defaultClearTimeout() {
+    throw new Error('clearTimeout has not been defined');
+}
+(function () {
+    try {
+        if (typeof setTimeout === 'function') {
+            cachedSetTimeout = setTimeout;
+        } else {
+            cachedSetTimeout = defaultSetTimout;
+        }
+    } catch (e) {
+        cachedSetTimeout = defaultSetTimout;
+    }
+    try {
+        if (typeof clearTimeout === 'function') {
+            cachedClearTimeout = clearTimeout;
+        } else {
+            cachedClearTimeout = defaultClearTimeout;
+        }
+    } catch (e) {
+        cachedClearTimeout = defaultClearTimeout;
+    }
+})();
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    // if setTimeout wasn't available but was latter defined
+    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+        cachedSetTimeout = setTimeout;
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch (e) {
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch (e) {
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    // if clearTimeout wasn't available but was latter defined
+    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+        cachedClearTimeout = clearTimeout;
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e) {
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e) {
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while (len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) {
+    return [];
+};
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () {
+    return '/';
+};
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function () {
+    return 0;
+};
+
+/***/ }),
+
+/***/ "../../noos/apps/mayan/node_modules/webpack/buildin/global.js":
+/***/ (function(module, exports) {
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+var g;
+
+// This works in non-strict mode
+g = function () {
+	return this;
+}();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || Function("return this")() || (1, eval)("this");
+} catch (e) {
+	// This works if the window reference is available
+	if ((typeof window === "undefined" ? "undefined" : _typeof(window)) === "object") g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
+
+/***/ }),
+
+/***/ "../../zwip/src/animation.js":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _loop = __webpack_require__("../../zwip/src/loop.js");
+
+var _loop2 = _interopRequireDefault(_loop);
+
+var _klak = __webpack_require__("../../klak/src/emitter.js");
+
+var _klak2 = _interopRequireDefault(_klak);
+
+var _utils = __webpack_require__("../../zwip/src/utils.js");
+
+var _easings = __webpack_require__("../../zwip/src/easings.js");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var internal = {};
+
+internal.parseEasing = function () {
+  var easing = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : _easings.easings.linear;
+
+
+  if (easing) {
+
+    if ((0, _utils.isString)(easing)) {
+
+      if (!_easings.easings[easing]) throw new Error('Unknown "' + easing + '" easing function');
+
+      easing = _easings.easings[easing];
+    }
+
+    (0, _utils.isFunction)(easing, 'easing');
+  }
+
+  return easing;
+};
+
+exports.default = internal.Animation = function () {
+  var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+
+  (0, _utils.isObject)(options, 'options');
+  (0, _utils.isUndefined)(options.isZwipAnimation, 'isZwipAnimation');
+
+  var _options$start = options.start,
+      _start = _options$start === undefined ? _utils.noop : _options$start,
+      _options$stop = options.stop,
+      _stop = _options$stop === undefined ? _utils.noop : _options$stop,
+      _options$update = options.update,
+      _update = _options$update === undefined ? _utils.noop : _options$update,
+      _options$render = options.render,
+      _render = _options$render === undefined ? _utils.noop : _options$render,
+      duration = options.duration,
+      _options$frequency = options.frequency,
+      _frequency = _options$frequency === undefined ? 1 : _options$frequency;
+
+  var _reverse = options.reverse,
+      _easing = options.easing,
+      nbFrames = options.nbFrames;
+
+
+  (0, _utils.assert)((0, _utils.isFunction)(_start), '\'start\' must be a function');
+  (0, _utils.assert)((0, _utils.isFunction)(_stop), '\'stop\' must be a function');
+  (0, _utils.assert)((0, _utils.isFunction)(_update), '\'update\' must be a function');
+  (0, _utils.assert)((0, _utils.isFunction)(_render), '\'render\' must be a function');
+
+  (0, _utils.assert)((0, _utils.isInteger)(_frequency) && _frequency > 0, '\'frequency\' must be an integer greater than 0');
+
+  (0, _utils.assert)(!(0, _utils.isUndefined)(duration) ^ !(0, _utils.isUndefined)(nbFrames), 'Exactly one option of [\'duration\', \'nbFrames\'] is required');
+
+  if (duration) (0, _utils.assert)((0, _utils.isInteger)(duration) && duration > 0, '\'duration\' must be an integer greater than 0');
+
+  if (nbFrames) (0, _utils.assert)((0, _utils.isInteger)(nbFrames) && nbFrames > 0, '\'nbFrames\' must be an integer greater than 0');
+
+  _easing = internal.parseEasing(_easing);
+  _reverse = !!_reverse;
+
+  var _startedAt = void 0;
+  var _pausedAt = void 0;
+  var _pausedTime = void 0;
+  var _frameCounter = 0;
+
+  var animation = {
+    isZwipAnimation: true,
+    start: function start() {
+      var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+
+      if (_startedAt) throw new Error('Animation is already started');
+
+      (0, _utils.isObject)(options, 'options');
+
+      if ('reverse' in options) _reverse = !!options.reverse;
+
+      _pausedAt = null;
+      _startedAt = Date.now();
+      _frameCounter = 0;
+      _pausedTime = 0;
+      _start(options);
+      _status = 'started';
+
+      _loop2.default.register(animation);
+
+      animation.emit('start');
+    },
+    stop: function stop() {
+
+      _pausedAt = null;
+      _startedAt = null;
+      _pausedTime = null;
+      _status = 'stopped';
+      _stop();
+
+      _loop2.default.deregister(animation);
+
+      animation.emit('stop');
+    },
+    pause: function pause() {
+
+      if (!_pausedAt) {
+        _pausedAt = Date.now();
+        animation.emit('unpause');
+        return;
+      }
+
+      _pausedTime = _pausedTime + (Date.now() - _pausedAt);
+      _pausedAt = null;
+      animation.emit('pause');
+    },
+    update: function update() {
+
+      if (!_startedAt) return;
+
+      if (nbFrames && _frameCounter >= nbFrames) return animation.stop();
+
+      _frameCounter++;
+
+      if (duration) {
+
+        var playedTime = animation.played;
+
+        var recalculated = Math.floor(_frameCounter * duration / playedTime);
+
+        if (recalculated > _frameCounter) nbFrames = recalculated;
+      }
+
+      _update();
+    },
+    render: function render() {
+      _render();
+    },
+
+    get currentFrame() {
+      return _frameCounter;
+    },
+    get reverse() {
+      return _reverse;
+    },
+    get frequency() {
+      return _frequency;
+    },
+    get pausedAt() {
+      return _pausedAt;
+    },
+    get played() {
+
+      if (!_startedAt) return 0;
+
+      var now = Date.now();
+
+      var totalTime = now - _startedAt;
+
+      if (_pausedAt) totalTime = totalTime - (now - _pausedAt);
+
+      return totalTime - _pausedTime;
+    },
+    get value() {
+
+      var value = _frameCounter / animation.nbFrames;
+
+      if (value < 0) {
+        console.error('value is < 0', value);
+        return 0;
+      }
+
+      if (value > 1) {
+        console.error('value is > 1', value);
+        return 1;
+      }
+
+      return _easing(!_reverse ? value : 1 - value);
+    },
+    get nbFrames() {
+
+      if (nbFrames) return nbFrames;
+
+      var duration = animation.duration;
+
+      if (!duration) return;
+
+      return duration / 1000 * _loop2.default.fps;
+    },
+    get duration() {
+
+      if (duration) return duration;
+
+      var nbFrames = animation.nbFrames;
+
+      if (!nbFrames) return;
+
+      return nbFrames / _loop2.default.fps;
+    },
+    get state() {
+      return {
+        status: _status,
+        value: animation.value,
+        nbFrames: animation.nbFrames,
+        duration: animation.duration,
+        played: animation.played,
+        currentFrame: animation.currentFrame
+      };
+    }
+  };
+
+  Object.assign(animation, (0, _klak2.default)(['start', 'stop', 'pause', 'unpause', 'tick']));
+
+  var _status = 'created';
+
+  return animation;
+};
+
+internal.Animation.isAnimation = function (input) {
+  return (0, _utils.isObject)(input) && input.isZwipAnimation === true;
+};
+
+/***/ }),
+
+/***/ "../../zwip/src/easings.js":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var EaseIn = exports.EaseIn = function EaseIn(power) {
+  return function (t) {
+    return Math.pow(t, power);
+  };
+};
+var EaseOut = exports.EaseOut = function EaseOut(power) {
+  return function (t) {
+    return 1 - Math.abs(Math.pow(t - 1, power));
+  };
+};
+var EaseInOut = exports.EaseInOut = function EaseInOut(power) {
+  return function (t) {
+    return t < .5 ? EaseIn(power)(t * 2) / 2 : EaseOut(power)(t * 2 - 1) / 2 + 0.5;
+  };
+};
+
+var easings = exports.easings = {
+  linear: EaseInOut(1),
+  easeInQuad: EaseIn(2),
+  easeOutQuad: EaseOut(2),
+  easeInOutQuad: EaseInOut(2),
+  easeInCubic: EaseIn(3),
+  easeOutCubic: EaseOut(3),
+  easeInOutCubic: EaseInOut(3),
+  easeInQuart: EaseIn(4),
+  easeOutQuart: EaseOut(4),
+  easeInOutQuart: EaseInOut(4),
+  easeInQuint: EaseIn(5),
+  easeOutQuint: EaseOut(5),
+  easeInOutQuint: EaseInOut(5),
+  easeInCirc: function easeInCirc(t) {
+    return -(Math.sqrt(1 - easings.easeInQuad(t)) - 1);
+  },
+  easeOutCirc: function easeOutCirc(t) {
+    return Math.sqrt(easings.easeOutQuad(t));
+  }
+};
+
+/***/ }),
+
+/***/ "../../zwip/src/loop.js":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _klak = __webpack_require__("../../klak/src/emitter.js");
+
+var _klak2 = _interopRequireDefault(_klak);
+
+var _utils = __webpack_require__("../../zwip/src/utils.js");
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var internal = {
+  animations: [],
+  listeners: [],
+  state: {
+    status: 'initialized'
+  },
+  fps: 60,
+  listenerTypes: ['start', 'stop', 'pause', 'unpause']
+};
+
+internal.loop = function () {
+
+  if (internal.state.status !== 'started') return;
+
+  internal.requestId = requestAnimationFrame(internal.loop);
+  internal.now = Date.now();
+
+  internal.interval = 1000 / internal.fps;
+  internal.delta = internal.now - internal.then;
+
+  if (internal.delta > internal.interval) {
+
+    internal.AnimationLoop.frame();
+  }
+};
+
+internal.MethodCaller = function (key) {
+  for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+    args[_key - 1] = arguments[_key];
+  }
+
+  (0, _utils.isRequired)(key, 'key');
+  (0, _utils.isString)(key, 'key');
+
+  return function (animation) {
+
+    // console.log(internal.counter, animation, animation.frequency, internal.counter % animation.frequency)
+    if (animation[key] && internal.counter % animation.frequency === 0) animation[key].apply(animation, args);
+  };
+};
+
+internal.emitTick = internal.MethodCaller('emit', 'tick');
+internal.callUpdate = internal.MethodCaller('update');
+internal.callRender = internal.MethodCaller('render');
+internal.callPause = internal.MethodCaller('pause');
+
+internal.isNotPaused = function (object) {
+  return !object.pausedAt;
+};
+
+internal.AnimationLoop = {
+  start: function start() {
+
+    if (internal.requestId) throw new Error('Loop is already started');
+
+    internal.counter = 0;
+    internal.paused = null;
+    internal.then = Date.now();
+    internal.state.status = 'started';
+
+    internal.loop();
+
+    internal.AnimationLoop.emit('start');
+  },
+  stop: function stop() {
+
+    if (internal.requestId) cancelAnimationFrame(internal.requestId);
+
+    internal.requestId = null;
+    internal.state.status = 'stopped';
+
+    internal.AnimationLoop.emit('stop');
+  },
+  pause: function pause() {
+
+    if (internal.paused) {
+
+      internal.paused = null;
+      internal.state.status = 'started';
+
+      internal.animations.forEach(internal.callPause);
+
+      internal.AnimationLoop.emit('unpause');
+
+      internal.loop();
+      return;
+    }
+
+    internal.animations.forEach(internal.callPause);
+
+    internal.paused = Date.now();
+    internal.state.status = 'paused';
+
+    internal.AnimationLoop.emit('pause');
+  },
+  register: function register(animation) {
+    var auto = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+
+
+    (0, _utils.isObject)(animation, 'animation');
+
+    (0, _utils.assert)(animation.isZwipAnimation === true, '\'animation\' must be a ZwipAnimation object');
+
+    (0, _utils.assert)((0, _utils.isFunction)(animation.render) || (0, _utils.isFunction)(animation.update), 'At least \'render\' or \'update\' method is required');
+
+    animation.render = animation.render || _utils.noop;
+    animation.update = animation.update || _utils.noop;
+
+    if (auto && !internal.requestId) internal.AnimationLoop.start();
+
+    if (internal.animations.includes(animation)) return;
+
+    internal.animations.push(animation);
+  },
+  deregister: function deregister(animation) {
+    var auto = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+
+
+    var index = internal.animations.indexOf(animation);
+
+    if (~index) internal.animations.splice(index, 1);
+
+    if (auto && internal.requestId && !internal.animations.length) internal.AnimationLoop.stop();
+  },
+  frame: function frame() {
+
+    internal.AnimationLoop.emit('tick');
+
+    internal.counter++;
+
+    internal.elapsed = internal.now - internal.then;
+    internal.then = internal.now - internal.delta % internal.interval;
+
+    internal.state.fps = 1000 / internal.elapsed;
+    internal.state.animations = internal.animations.length;
+    internal.state.frames = internal.counter;
+
+    internal.animations.filter(internal.isNotPaused).forEach(internal.emitTick);
+    internal.animations.filter(internal.isNotPaused).forEach(internal.callUpdate);
+    internal.animations.filter(internal.isNotPaused).forEach(internal.callRender);
+  },
+
+
+  get state() {
+    return internal.state;
+  },
+  get fps() {
+    return internal.fps;
+  },
+  set fps(newValue) {
+
+    (0, _utils.isInteger)(newValue, 'fps');
+
+    internal.fps = newValue;
+  }
+};
+
+exports.default = Object.assign(internal.AnimationLoop, (0, _klak2.default)(['start', 'stop', 'pause', 'unpause', 'tick']));
+
+/***/ }),
+
+/***/ "../../zwip/src/polyfills.js":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+if (!Element.prototype.matches) {
+  Element.prototype.matches = Element.prototype.matchesSelector || Element.prototype.mozMatchesSelector || Element.prototype.msMatchesSelector || Element.prototype.oMatchesSelector || Element.prototype.webkitMatchesSelector || function (s) {
+    var matches = (this.document || this.ownerDocument).querySelectorAll(s);
+    var i = matches.length;
+    while (--i >= 0 && matches.item(i) !== this) {}
+    return i > -1;
+  };
+}
+window.requestAnimationFrame = function () {
+  return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function (callback) {
+    window.setTimeout(function () {
+
+      callback(+new Date());
+    }, 1000 / 60);
+  };
+}();
+
+/***/ }),
+
+/***/ "../../zwip/src/utils.js":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+var internals = {};
+
+internals.Assertion = function (check, errorMessage) {
+
+  return function (input, assert) {
+
+    var isTrue = !!check(input);
+    if (isTrue) return input || true;
+
+    if (!assert) return false;
+
+    throw new Error('"' + (typeof assert !== 'string' ? 'input' : assert) + '" ' + errorMessage);
+  };
+};
+
+var assert = exports.assert = function assert(condition, message) {
+
+  if (condition) return condition;
+
+  throw new Error(message);
+};
+
+var noop = exports.noop = function noop() {};
+var isEqualTo = exports.isEqualTo = function isEqualTo(value) {
+  var message = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'is not equal to value';
+  return internals.Assertion(function (input) {
+    return input === value;
+  }, message);
+};
+var isTrue = exports.isTrue = isEqualTo(true, 'must be true');
+var isUndefined = exports.isUndefined = isEqualTo(void 0, 'must be undefined');
+var isRequired = exports.isRequired = internals.Assertion(function (input) {
+  return !!input;
+}, 'is required');
+var isInstanceOf = exports.isInstanceOf = function isInstanceOf(type) {
+  return internals.Assertion(function (input) {
+    return input instanceof type;
+  }, 'is not an instance of ' + type.name);
+};
+var isArray = exports.isArray = isInstanceOf(Array);
+var isObject = exports.isObject = internals.Assertion(function (input) {
+  return (typeof input === 'undefined' ? 'undefined' : _typeof(input)) === 'object';
+}, 'must be an object');
+var isString = exports.isString = internals.Assertion(function (input) {
+  return typeof input === 'string';
+}, 'must be a string');
+var isFunction = exports.isFunction = internals.Assertion(function (input) {
+  return typeof input === 'function';
+}, 'must be a function');
+var isNumber = exports.isNumber = internals.Assertion(function (input) {
+  return typeof input === 'number';
+}, 'must be a number');
+var isInteger = exports.isInteger = internals.Assertion(function (input) {
+  return Number.isInteger(input);
+}, 'must be an integer');
+
+var isAnimation = exports.isAnimation = function isAnimation(input) {
+  return isObject(input) && input.isZwipAnimation === true;
+};
+
+var isElement = exports.isElement = internals.Assertion(function (object) {
+
+  if (!object || (typeof object === 'undefined' ? 'undefined' : _typeof(object)) !== "object") return false;
+
+  if ((typeof HTMLElement === 'undefined' ? 'undefined' : _typeof(HTMLElement)) === "object") return object instanceof HTMLElement;
+
+  return object.nodeType === 1 && typeof object.nodeName === "string";
+}, 'must be a HTMLElement');
+
+var round = exports.round = function round(value, decimals) {
+
+  isNumber(value, 'value');
+
+  isRequired(decimals, 'decimals');
+  isInteger(decimals, 'decimals');
+
+  return Number(Math.round(value + 'e' + decimals) + 'e-' + decimals);
+};
+
+/***/ }),
 
 /***/ "../node_modules/array.from/implementation.js":
 /***/ (function(module, exports, __webpack_require__) {
@@ -2826,7 +3764,7 @@ module.exports = function isPrimitive(value) {
   return Promise;
 });
 //# sourceMappingURL=es6-promise.map
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__("../node_modules/process/browser.js"), __webpack_require__("../node_modules/webpack/buildin/global.js")))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__("../../noos/apps/mayan/node_modules/process/browser.js"), __webpack_require__("../../noos/apps/mayan/node_modules/webpack/buildin/global.js")))
 
 /***/ }),
 
@@ -4657,7 +5595,7 @@ exports.notifications = notifications;
 exports.importNode = importNode;
 
 //# sourceMappingURL=incremental-dom-cjs.js.map
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__("../node_modules/process/browser.js")))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__("../../noos/apps/mayan/node_modules/process/browser.js")))
 
 /***/ }),
 
@@ -5341,197 +6279,6 @@ module.exports = function shimAssign() {
 			return Object.assign !== polyfill;
 		} });
 	return polyfill;
-};
-
-/***/ }),
-
-/***/ "../node_modules/process/browser.js":
-/***/ (function(module, exports) {
-
-// shim for using process in browser
-var process = module.exports = {};
-
-// cached from whatever global is present so that test runners that stub it
-// don't break things.  But we need to wrap it in a try catch in case it is
-// wrapped in strict mode code which doesn't define any globals.  It's inside a
-// function because try/catches deoptimize in certain engines.
-
-var cachedSetTimeout;
-var cachedClearTimeout;
-
-function defaultSetTimout() {
-    throw new Error('setTimeout has not been defined');
-}
-function defaultClearTimeout() {
-    throw new Error('clearTimeout has not been defined');
-}
-(function () {
-    try {
-        if (typeof setTimeout === 'function') {
-            cachedSetTimeout = setTimeout;
-        } else {
-            cachedSetTimeout = defaultSetTimout;
-        }
-    } catch (e) {
-        cachedSetTimeout = defaultSetTimout;
-    }
-    try {
-        if (typeof clearTimeout === 'function') {
-            cachedClearTimeout = clearTimeout;
-        } else {
-            cachedClearTimeout = defaultClearTimeout;
-        }
-    } catch (e) {
-        cachedClearTimeout = defaultClearTimeout;
-    }
-})();
-function runTimeout(fun) {
-    if (cachedSetTimeout === setTimeout) {
-        //normal enviroments in sane situations
-        return setTimeout(fun, 0);
-    }
-    // if setTimeout wasn't available but was latter defined
-    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
-        cachedSetTimeout = setTimeout;
-        return setTimeout(fun, 0);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedSetTimeout(fun, 0);
-    } catch (e) {
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-            return cachedSetTimeout.call(null, fun, 0);
-        } catch (e) {
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-            return cachedSetTimeout.call(this, fun, 0);
-        }
-    }
-}
-function runClearTimeout(marker) {
-    if (cachedClearTimeout === clearTimeout) {
-        //normal enviroments in sane situations
-        return clearTimeout(marker);
-    }
-    // if clearTimeout wasn't available but was latter defined
-    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
-        cachedClearTimeout = clearTimeout;
-        return clearTimeout(marker);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedClearTimeout(marker);
-    } catch (e) {
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-            return cachedClearTimeout.call(null, marker);
-        } catch (e) {
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-            return cachedClearTimeout.call(this, marker);
-        }
-    }
-}
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    if (!draining || !currentQueue) {
-        return;
-    }
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
-
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = runTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while (len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    runClearTimeout(timeout);
-}
-
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        runTimeout(drainQueue);
-    }
-};
-
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-process.prependListener = noop;
-process.prependOnceListener = noop;
-
-process.listeners = function (name) {
-    return [];
-};
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-process.cwd = function () {
-    return '/';
-};
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-process.umask = function () {
-    return 0;
 };
 
 /***/ }),
@@ -8465,33 +9212,7 @@ module.exports.normalize = normalize;
 
 /***/ }),
 
-/***/ "../node_modules/webpack/buildin/global.js":
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = function () {
-	return this;
-}();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || Function("return this")() || (1, eval)("this");
-} catch (e) {
-	// This works if the window reference is available
-	if (typeof window === "object") g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-/***/ }),
-
-/***/ "../node_modules/zwip-player/src/zwip-player.js":
+/***/ "../node_modules/zwip-player/node_modules/zwip/src/animation.js":
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8501,221 +9222,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _zwip = __webpack_require__("../node_modules/zwip/src/index.js");
-
-var _component = __webpack_require__("../node_modules/pwet/src/component.js");
-
-var _component2 = _interopRequireDefault(_component);
-
-var _attribute = __webpack_require__("../node_modules/pwet/src/attribute.js");
-
-var _idomUtil = __webpack_require__("../node_modules/idom-util/src/index.js");
-
-var _assertions = __webpack_require__("../node_modules/pwet/src/assertions.js");
-
-var _utilities = __webpack_require__("../node_modules/pwet/src/utilities.js");
-
-var _incrementalDom = __webpack_require__("../node_modules/incremental-dom/dist/incremental-dom-cjs.js");
-
-var _zwipPlayer = __webpack_require__("../node_modules/css-loader/index.js!../node_modules/stylus-loader/index.js!../node_modules/zwip-player/src/zwip-player.styl");
-
-var _zwipPlayer2 = _interopRequireDefault(_zwipPlayer);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var internal = {};
-
-internal.renderControl = function (content, action) {
-  var isEnabled = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
-
-  var args = [null, null, 'onmouseup', action];
-
-  if (!isEnabled) args.push('disabled', true);
-
-  _idomUtil.renderButton.apply(undefined, args.concat([_incrementalDom.text.bind(null, content)]));
-};
-
-internal.renderObject = function () {
-  var object = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-
-  Object.keys(object).forEach(function (key) {
-
-    (0, _idomUtil.renderDiv)(function () {
-      (0, _idomUtil.renderStrong)(null, null, 'style', 'display:inline-block;width:90px', _incrementalDom.text.bind(null, key + ':\t\t'));
-      (0, _idomUtil.renderPre)(_incrementalDom.text.bind(null, object[key]));
-    });
-  });
-};
-
-internal.Player = function (element) {
-
-  var _loaded = false;
-  var _animation = false;
-  var _playAnimation = _utilities.noop;
-  var _reverseAnimation = _utilities.noop;
-  var _pauseAnimation = _utilities.noop;
-  var _stopAnimation = _utilities.noop;
-
-  var _isLoopStarted = false;
-  var _isAnimationStarted = false;
-
-  var _updateLoopState = function _updateLoopState() {
-
-    var state = element.state;
-
-    var loopState = _zwip.Loop.state;
-
-    if (loopState.fps) loopState.fps = Math.round(loopState.fps * 1000) / 1000;
-
-    var _animation$state = _animation.state,
-        value = _animation$state.value,
-        nbFrames = _animation$state.nbFrames,
-        duration = _animation$state.duration,
-        played = _animation$state.played,
-        currentFrame = _animation$state.currentFrame;
-
-
-    var animationState = {
-      value: (!value ? 0 : Math.round(value * 100)) + '%',
-      frames: (currentFrame || 0) + '/' + nbFrames,
-      duration: played + '/' + duration
-    };
-
-    element.state = Object.assign(state, {
-      loopState: loopState,
-      animationState: animationState
-    });
-  };
-
-  var _observer = new MutationObserver(function () {
-
-    if (_loaded) return _observer.disconnect();
-
-    _loaded = true;
-
-    _animation = element.makeAnimation(element.querySelector('.scene'));
-
-    (0, _assertions.assert)(_zwip.Animation.isAnimation(_animation), '\'makeAnimation\' did not return a Zwip animation');
-
-    _playAnimation = function _playAnimation() {
-      return _animation.start({ reverse: false });
-    };
-    _reverseAnimation = function _reverseAnimation() {
-      return _animation.start({ reverse: true });
-    };
-    _pauseAnimation = function _pauseAnimation() {
-      return _animation.pause();
-    };
-    _stopAnimation = function _stopAnimation() {
-      return _animation.stop();
-    };
-
-    _animation.on('stop', function () {
-      return _isAnimationStarted = false;
-    });
-    _animation.on('start', function () {
-      return _isAnimationStarted = true;
-    });
-
-    _zwip.Loop.on('start', function () {
-      return _isLoopStarted = true;
-    });
-    _zwip.Loop.on('stop', function () {
-      return _isLoopStarted = _isAnimationStarted = false;
-    });
-    _zwip.Loop.on(['pause', 'stop', 'tick'], _updateLoopState);
-    _zwip.Loop.on('tick', function () {
-      return _isLoopStarted = true;
-    });
-
-    _updateLoopState();
-  });
-
-  _observer.observe(element, { childList: true, subtree: true });
-
-  var render = function render(element) {
-    var state = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-    var renderScene = state.renderScene;
-
-
-    (0, _incrementalDom.patch)(element, function () {
-
-      (0, _idomUtil.renderStyle)(_zwipPlayer2.default.toString());
-
-      (0, _idomUtil.renderDiv)(null, null, 'class', 'left', function () {
-        (0, _idomUtil.renderDiv)(null, null, 'class', 'scene', renderScene);
-        (0, _idomUtil.renderDiv)(null, null, 'class', 'toolbar', function () {
-          internal.renderControl('◀', _reverseAnimation, !_isAnimationStarted);
-          internal.renderControl('▶', _playAnimation, !_isAnimationStarted);
-          internal.renderControl('▮▮', _pauseAnimation, _isAnimationStarted);
-          internal.renderControl('◼', _stopAnimation, _isAnimationStarted);
-        });
-      });
-
-      (0, _idomUtil.renderDiv)(null, null, 'class', 'right', function () {
-        (0, _idomUtil.renderElement)('div', null, null, function () {
-          (0, _idomUtil.renderH3)(_incrementalDom.text.bind(null, 'Loop state:'));
-          internal.renderObject(element.loopState);
-          (0, _idomUtil.renderH3)(_incrementalDom.text.bind(null, 'Animation state:'));
-          internal.renderObject(element.animationState);
-        });
-        (0, _idomUtil.renderDiv)(null, null, 'class', 'toolbar', function () {
-          internal.renderControl('▶', _zwip.Loop.start, !_isLoopStarted);
-          internal.renderControl('▮▮', _zwip.Loop.pause, _isLoopStarted);
-          internal.renderControl('◼', _zwip.Loop.stop, _isLoopStarted);
-        });
-      });
-    });
-  };
-
-  var component = (0, _component2.default)(internal.Player, element, { render: render });
-
-  return component;
-};
-
-internal.Player.tagName = 'zwip-player';
-
-internal.Player.shadowRoot = false;
-
-internal.Player.properties = {
-  animationState: {},
-  loopState: {},
-  makeAnimation: function makeAnimation(element, scene) {
-
-    var title = scene.firstChild;
-
-    title.style.position = 'absolute';
-
-    var render = function render() {
-      return title.style.left = animation.value * (scene.clientWidth - title.clientWidth - 2) + 'px';
-    };
-
-    var animation = (0, _zwip.Animation)({ duration: 5000, render: render });
-
-    return animation;
-  },
-  renderScene: function renderScene() {
-
-    (0, _idomUtil.renderElement)('h1', null, null, 'style', 'font-size:24px;', function () {
-      (0, _incrementalDom.text)('DEFAULT SCENE');
-    });
-  }
-};
-exports.default = internal.Player;
-
-/***/ }),
-
-/***/ "../node_modules/zwip/src/animation.js":
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _loop = __webpack_require__("../node_modules/zwip/src/loop.js");
+var _loop = __webpack_require__("../node_modules/zwip-player/node_modules/zwip/src/loop.js");
 
 var _loop2 = _interopRequireDefault(_loop);
 
@@ -8723,9 +9230,9 @@ var _klak = __webpack_require__("../node_modules/klak/src/emitter.js");
 
 var _klak2 = _interopRequireDefault(_klak);
 
-var _utils = __webpack_require__("../node_modules/zwip/src/utils.js");
+var _utils = __webpack_require__("../node_modules/zwip-player/node_modules/zwip/src/utils.js");
 
-var _easings = __webpack_require__("../node_modules/zwip/src/easings.js");
+var _easings = __webpack_require__("../node_modules/zwip-player/node_modules/zwip/src/easings.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -8939,7 +9446,7 @@ internal.Animation.isAnimation = function (input) {
 
 /***/ }),
 
-/***/ "../node_modules/zwip/src/chain.js":
+/***/ "../node_modules/zwip-player/node_modules/zwip/src/chain.js":
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8949,11 +9456,11 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _animation = __webpack_require__("../node_modules/zwip/src/animation.js");
+var _animation = __webpack_require__("../node_modules/zwip-player/node_modules/zwip/src/animation.js");
 
 var _animation2 = _interopRequireDefault(_animation);
 
-var _utils = __webpack_require__("../node_modules/zwip/src/utils.js");
+var _utils = __webpack_require__("../node_modules/zwip-player/node_modules/zwip/src/utils.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -9114,7 +9621,7 @@ exports.default = Chain;
 
 /***/ }),
 
-/***/ "../node_modules/zwip/src/easings.js":
+/***/ "../node_modules/zwip-player/node_modules/zwip/src/easings.js":
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9163,7 +9670,7 @@ var easings = exports.easings = {
 
 /***/ }),
 
-/***/ "../node_modules/zwip/src/index.js":
+/***/ "../node_modules/zwip-player/node_modules/zwip/src/index.js":
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9174,15 +9681,15 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.Chain = exports.Loop = exports.Animation = undefined;
 
-var _animation = __webpack_require__("../node_modules/zwip/src/animation.js");
+var _animation = __webpack_require__("../node_modules/zwip-player/node_modules/zwip/src/animation.js");
 
 var _animation2 = _interopRequireDefault(_animation);
 
-var _loop = __webpack_require__("../node_modules/zwip/src/loop.js");
+var _loop = __webpack_require__("../node_modules/zwip-player/node_modules/zwip/src/loop.js");
 
 var _loop2 = _interopRequireDefault(_loop);
 
-var _chain = __webpack_require__("../node_modules/zwip/src/chain.js");
+var _chain = __webpack_require__("../node_modules/zwip-player/node_modules/zwip/src/chain.js");
 
 var _chain2 = _interopRequireDefault(_chain);
 
@@ -9194,7 +9701,7 @@ exports.Chain = _chain2.default;
 
 /***/ }),
 
-/***/ "../node_modules/zwip/src/loop.js":
+/***/ "../node_modules/zwip-player/node_modules/zwip/src/loop.js":
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9208,7 +9715,7 @@ var _klak = __webpack_require__("../node_modules/klak/src/emitter.js");
 
 var _klak2 = _interopRequireDefault(_klak);
 
-var _utils = __webpack_require__("../node_modules/zwip/src/utils.js");
+var _utils = __webpack_require__("../node_modules/zwip-player/node_modules/zwip/src/utils.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -9377,32 +9884,7 @@ exports.default = Object.assign(internal.AnimationLoop, (0, _klak2.default)(['st
 
 /***/ }),
 
-/***/ "../node_modules/zwip/src/polyfills.js":
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-if (!Element.prototype.matches) {
-  Element.prototype.matches = Element.prototype.matchesSelector || Element.prototype.mozMatchesSelector || Element.prototype.msMatchesSelector || Element.prototype.oMatchesSelector || Element.prototype.webkitMatchesSelector || function (s) {
-    var matches = (this.document || this.ownerDocument).querySelectorAll(s);
-    var i = matches.length;
-    while (--i >= 0 && matches.item(i) !== this) {}
-    return i > -1;
-  };
-}
-window.requestAnimationFrame = function () {
-  return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame || function (callback) {
-    window.setTimeout(function () {
-
-      callback(+new Date());
-    }, 1000 / 60);
-  };
-}();
-
-/***/ }),
-
-/***/ "../node_modules/zwip/src/utils.js":
+/***/ "../node_modules/zwip-player/node_modules/zwip/src/utils.js":
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9491,26 +9973,251 @@ var round = exports.round = function round(value, decimals) {
 
 /***/ }),
 
+/***/ "../node_modules/zwip-player/src/zwip-player.js":
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _zwip = __webpack_require__("../node_modules/zwip-player/node_modules/zwip/src/index.js");
+
+var _component = __webpack_require__("../node_modules/pwet/src/component.js");
+
+var _component2 = _interopRequireDefault(_component);
+
+var _attribute = __webpack_require__("../node_modules/pwet/src/attribute.js");
+
+var _idomUtil = __webpack_require__("../node_modules/idom-util/src/index.js");
+
+var _assertions = __webpack_require__("../node_modules/pwet/src/assertions.js");
+
+var _utilities = __webpack_require__("../node_modules/pwet/src/utilities.js");
+
+var _incrementalDom = __webpack_require__("../node_modules/incremental-dom/dist/incremental-dom-cjs.js");
+
+var _zwipPlayer = __webpack_require__("../node_modules/css-loader/index.js!../node_modules/stylus-loader/index.js!../node_modules/zwip-player/src/zwip-player.styl");
+
+var _zwipPlayer2 = _interopRequireDefault(_zwipPlayer);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var internal = {};
+
+internal.renderControl = function (content, action) {
+  var isEnabled = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
+
+  var args = [null, null, 'onmouseup', action];
+
+  if (!isEnabled) args.push('disabled', true);
+
+  _idomUtil.renderButton.apply(undefined, args.concat([_incrementalDom.text.bind(null, content)]));
+};
+
+internal.renderObject = function () {
+  var object = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+  Object.keys(object).forEach(function (key) {
+
+    (0, _idomUtil.renderDiv)(function () {
+      (0, _idomUtil.renderStrong)(null, null, 'style', 'display:inline-block;width:90px', _incrementalDom.text.bind(null, key + ':\t\t'));
+      (0, _idomUtil.renderPre)(_incrementalDom.text.bind(null, object[key]));
+    });
+  });
+};
+
+internal.Player = function (element) {
+
+  var _loaded = false;
+  var _animation = false;
+  var _playAnimation = _utilities.noop;
+  var _reverseAnimation = _utilities.noop;
+  var _pauseAnimation = _utilities.noop;
+  var _stopAnimation = _utilities.noop;
+
+  var _isLoopStarted = false;
+  var _isAnimationStarted = false;
+
+  var _updateLoopState = function _updateLoopState() {
+
+    var state = element.state;
+
+    var loopState = _zwip.Loop.state;
+
+    if (loopState.fps) loopState.fps = Math.round(loopState.fps * 1000) / 1000;
+
+    var _animation$state = _animation.state,
+        value = _animation$state.value,
+        nbFrames = _animation$state.nbFrames,
+        duration = _animation$state.duration,
+        played = _animation$state.played,
+        currentFrame = _animation$state.currentFrame;
+
+
+    var animationState = {
+      value: (!value ? 0 : Math.round(value * 100)) + '%',
+      frames: (currentFrame || 0) + '/' + nbFrames,
+      duration: played + '/' + duration
+    };
+
+    element.state = Object.assign(state, {
+      loopState: loopState,
+      animationState: animationState
+    });
+  };
+
+  var _observer = new MutationObserver(function () {
+
+    if (_loaded) return _observer.disconnect();
+
+    _loaded = true;
+
+    _animation = element.makeAnimation(element.querySelector('.scene'));
+
+    (0, _assertions.assert)(_zwip.Animation.isAnimation(_animation), '\'makeAnimation\' did not return a Zwip animation');
+
+    _playAnimation = function _playAnimation() {
+      return _animation.start({ reverse: false });
+    };
+    _reverseAnimation = function _reverseAnimation() {
+      return _animation.start({ reverse: true });
+    };
+    _pauseAnimation = function _pauseAnimation() {
+      return _animation.pause();
+    };
+    _stopAnimation = function _stopAnimation() {
+      return _animation.stop();
+    };
+
+    _animation.on('stop', function () {
+      return _isAnimationStarted = false;
+    });
+    _animation.on('start', function () {
+      return _isAnimationStarted = true;
+    });
+
+    _zwip.Loop.on('start', function () {
+      return _isLoopStarted = true;
+    });
+    _zwip.Loop.on('stop', function () {
+      return _isLoopStarted = _isAnimationStarted = false;
+    });
+    _zwip.Loop.on(['pause', 'stop', 'tick'], _updateLoopState);
+    _zwip.Loop.on('tick', function () {
+      return _isLoopStarted = true;
+    });
+
+    _updateLoopState();
+  });
+
+  _observer.observe(element, { childList: true, subtree: true });
+
+  var render = function render(element) {
+    var state = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    var renderScene = state.renderScene;
+
+
+    (0, _incrementalDom.patch)(element, function () {
+
+      (0, _idomUtil.renderStyle)(_zwipPlayer2.default.toString());
+
+      (0, _idomUtil.renderDiv)(null, null, 'class', 'left', function () {
+        (0, _idomUtil.renderDiv)(null, null, 'class', 'scene', renderScene);
+        (0, _idomUtil.renderDiv)(null, null, 'class', 'toolbar', function () {
+          internal.renderControl('◀', _reverseAnimation, !_isAnimationStarted);
+          internal.renderControl('▶', _playAnimation, !_isAnimationStarted);
+          internal.renderControl('▮▮', _pauseAnimation, _isAnimationStarted);
+          internal.renderControl('◼', _stopAnimation, _isAnimationStarted);
+        });
+      });
+
+      (0, _idomUtil.renderDiv)(null, null, 'class', 'right', function () {
+        (0, _idomUtil.renderElement)('div', null, null, function () {
+          (0, _idomUtil.renderH3)(_incrementalDom.text.bind(null, 'Loop state:'));
+          internal.renderObject(element.loopState);
+          (0, _idomUtil.renderH3)(_incrementalDom.text.bind(null, 'Animation state:'));
+          internal.renderObject(element.animationState);
+        });
+        (0, _idomUtil.renderDiv)(null, null, 'class', 'toolbar', function () {
+          internal.renderControl('▶', _zwip.Loop.start, !_isLoopStarted);
+          internal.renderControl('▮▮', _zwip.Loop.pause, _isLoopStarted);
+          internal.renderControl('◼', _zwip.Loop.stop, _isLoopStarted);
+        });
+      });
+    });
+  };
+
+  var component = (0, _component2.default)(internal.Player, element, { render: render });
+
+  return component;
+};
+
+internal.Player.tagName = 'zwip-player';
+
+internal.Player.shadowRoot = false;
+
+internal.Player.properties = {
+  animationState: {},
+  loopState: {},
+  makeAnimation: function makeAnimation(element, scene) {
+
+    var title = scene.firstChild;
+
+    title.style.position = 'absolute';
+
+    var render = function render() {
+      return title.style.left = animation.value * (scene.clientWidth - title.clientWidth - 2) + 'px';
+    };
+
+    var animation = (0, _zwip.Animation)({ duration: 5000, render: render });
+
+    return animation;
+  },
+  renderScene: function renderScene() {
+
+    (0, _idomUtil.renderElement)('h1', null, null, 'style', 'font-size:24px;', function () {
+      (0, _incrementalDom.text)('DEFAULT SCENE');
+    });
+  }
+};
+exports.default = internal.Player;
+
+/***/ }),
+
 /***/ "../src/animation.js":
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_zwip_src_animation__ = __webpack_require__("../node_modules/zwip/src/animation.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_zwip_src_animation__ = __webpack_require__("../../zwip/src/animation.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_zwip_src_animation___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_zwip_src_animation__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_style_attr__ = __webpack_require__("../node_modules/style-attr/lib/index.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_style_attr___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_style_attr__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_zwip_src_utils__ = __webpack_require__("../node_modules/zwip/src/utils.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_zwip_src_utils__ = __webpack_require__("../../zwip/src/utils.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_zwip_src_utils___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2_zwip_src_utils__);
 
 
 
 
+const _defaultStyle = {
+  position: 'absolute'
+};
+
 const BubbleAnimation = (options = {}) => {
 
-  const { container, element } = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_zwip_src_utils__["isObject"])(options, 'options');
+  const {
+    container,
+    element,
+    start: _start = __WEBPACK_IMPORTED_MODULE_2_zwip_src_utils__["noop"],
+    stop: _stop = __WEBPACK_IMPORTED_MODULE_2_zwip_src_utils__["noop"]
+  } = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_zwip_src_utils__["isObject"])(options, 'options');
 
-  __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_zwip_src_utils__["isElement"])(options.element, 'element');
-  __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_zwip_src_utils__["isElement"])(options.container, 'container');
+  __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_zwip_src_utils__["isElement"])(element, 'element');
+  __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_zwip_src_utils__["isElement"])(container, 'container');
+  __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_zwip_src_utils__["isFunction"])(_start, 'start');
+  __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_zwip_src_utils__["isFunction"])(_stop, 'stop');
 
   const _style = {};
   let _center;
@@ -9542,18 +10249,43 @@ const BubbleAnimation = (options = {}) => {
     };
   };
 
-  _rect = element.getBoundingClientRect();
-  _center = _getCenter(_rect);
+  const initialize = () => {
 
-  _radius1 = _rect.width / 2;
+    _rect = element.getBoundingClientRect();
+    _center = _getCenter(_rect);
 
-  const containerCorners = _getCorners(container.getBoundingClientRect());
-  const distances = containerCorners.map(_calculateDistance.bind(null, _center));
+    _radius1 = _rect.width / 2;
 
-  _radius2 = Math.max(...distances);
-  _delta = _radius2 - _radius1;
+    const distances = corners.map(_calculateDistance.bind(null, _center));
+
+    _radius2 = Math.max(...distances);
+    _delta = _radius2 - _radius1;
+  };
+
+  const corners = _getCorners(container.getBoundingClientRect());
+
+  initialize();
+
+  let _clone = element.cloneNode();
+  _clone.classList.add('clone');
+  _clone.setAttribute('style', `position:absolute;left:${element.offsetLeft}px;top:${element.offsetTop}px;`);
+  _clone.style.opacity = 0;
+  _clone.style.zIndex = -1;
 
   const animation = __WEBPACK_IMPORTED_MODULE_0_zwip_src_animation___default()(Object.assign(options, {
+    start(options) {
+
+      container.appendChild(_clone);
+
+      Object.assign(_style, _defaultStyle);
+
+      _start(options);
+    },
+    stop(options) {
+
+      _stop();
+      container.removeChild(_clone);
+    },
     update() {
 
       const diameter = Math.round(_rect.width + 2 * _delta * animation.value);
@@ -9565,7 +10297,7 @@ const BubbleAnimation = (options = {}) => {
     },
     render() {
 
-      element.setAttribute('style', __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_1_style_attr__["stringify"])(_style));
+      _clone.setAttribute('style', Object.assign(__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_1_style_attr__["stringify"])(_style), _defaultStyle));
     }
   }));
 
@@ -9581,7 +10313,7 @@ const BubbleAnimation = (options = {}) => {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_zwip_src_polyfills__ = __webpack_require__("../node_modules/zwip/src/polyfills.js");
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_zwip_src_polyfills__ = __webpack_require__("../../zwip/src/polyfills.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_zwip_src_polyfills___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_zwip_src_polyfills__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_pwet_src_polyfills__ = __webpack_require__("../node_modules/pwet/src/polyfills/index.js");
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_pwet_src_polyfills___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_pwet_src_polyfills__);

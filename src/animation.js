@@ -1,22 +1,24 @@
 import Animation from 'zwip/src/animation';
-import { parse as parseStyle, stringify as renderStyle } from 'style-attr';
+import { stringify as renderStyle } from 'style-attr';
 import { isElement, isFunction, isObject, noop } from 'zwip/src/utils';
 
 const _defaultStyle = {
   position: 'absolute',
-  // display: 'block'
-}
+};
+
 const BubbleAnimation = (options = {}) => {
 
   const {
     container,
     element,
-    start:_start = noop
+    start:_start = noop,
+    stop:_stop = noop
   } = isObject(options, 'options');
 
   isElement(element, 'element');
   isElement(container, 'container');
   isFunction(_start, 'start');
+  isFunction(_stop, 'stop');
 
   const _style = {};
   let _center;
@@ -55,23 +57,44 @@ const BubbleAnimation = (options = {}) => {
     }
   };
 
-  _rect = element.getBoundingClientRect();
-  _center = _getCenter(_rect);
 
-  _radius1 = _rect.width / 2;
+  const initialize = () => {
 
-  const containerCorners = _getCorners(container.getBoundingClientRect());
-  const distances = containerCorners.map(_calculateDistance.bind(null, _center));
+    _rect = element.getBoundingClientRect();
+    _center = _getCenter(_rect);
 
-  _radius2 = Math.max(...distances);
-  _delta = _radius2 - _radius1;
+    _radius1 = _rect.width / 2;
+
+    const distances = corners.map(_calculateDistance.bind(null, _center));
+
+    _radius2 = Math.max(...distances);
+    _delta = _radius2 - _radius1;
+  };
+
+  const corners = _getCorners(container.getBoundingClientRect());
+
+  initialize();
+
+  let _clone = element.cloneNode();
+  _clone.classList.add('clone');
+  _clone.setAttribute('style', `position:absolute;left:${element.offsetLeft}px;top:${element.offsetTop}px;`);
+  _clone.style.opacity = 0;
+  _clone.style.zIndex = -1;
 
   const animation = Animation(Object.assign(options, {
-    start() {
-      Object.assign(_style, _defaultStyle, {
-        // top: _rect.top,
-        // left: _rect.left
-      });
+    start(options) {
+
+      container.appendChild(_clone);
+
+      Object.assign(_style, _defaultStyle);
+
+      _start(options);
+
+    },
+    stop(options) {
+
+      _stop();
+      container.removeChild(_clone);
     },
     update(){
 
@@ -84,7 +107,7 @@ const BubbleAnimation = (options = {}) => {
     },
     render(){
 
-      element.setAttribute('style', Object.assign(renderStyle(_style), _defaultStyle));
+      _clone.setAttribute('style', Object.assign(renderStyle(_style), _defaultStyle));
     }
   }));
 
