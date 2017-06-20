@@ -59,7 +59,7 @@
 /******/ 	
 /******/ 	
 /******/ 	var hotApplyOnUpdate = true;
-/******/ 	var hotCurrentHash = "0d9d590b6840e0923952"; // eslint-disable-line no-unused-vars
+/******/ 	var hotCurrentHash = "bb4c69b0e177f673ddbb"; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentModuleData = {};
 /******/ 	var hotCurrentChildModule; // eslint-disable-line no-unused-vars
 /******/ 	var hotCurrentParents = []; // eslint-disable-line no-unused-vars
@@ -9819,12 +9819,8 @@ internal.Component = function (factory, element) {
           defaultValue = _ref.defaultValue;
 
 
-      var value = newProperties[name];
-
-      value = (0, _assertions.isUndefined)(value) ? defaultValue : coerce(value);
-
-      return Object.assign(properties, _defineProperty({}, name, value));
-    }, newProperties);
+      return Object.assign(properties, _defineProperty({}, name, !(0, _assertions.isUndefined)(newProperties[name]) ? coerce(newProperties[name]) : !(0, _assertions.isUndefined)(_properties[name]) ? _properties[name] : defaultValue));
+    }, {});
 
     _hooks.initialize(newProperties, function () {
       var shouldRender = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
@@ -10434,10 +10430,6 @@ Object.defineProperty(exports, "__esModule", {
 });
 
 var _zwip = __webpack_require__("../node_modules/zwip/src/index.js");
-
-var _component = __webpack_require__("../node_modules/pwet/src/component.js");
-
-var _component2 = _interopRequireDefault(_component);
 
 var _attribute = __webpack_require__("../node_modules/pwet/src/attribute.js");
 
